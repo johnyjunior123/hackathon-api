@@ -1,0 +1,140 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Empresa {
+  id           Int      @id @default(autoincrement())
+  razaoSocial  String
+  cnpj         String   @unique
+  userId       Int      @unique
+  user         User     @relation(fields: [userId], references: [id])
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  nome          String
+  cpf           String?        @unique
+  nascimento    DateTime?
+  email         String         @unique
+  contato       String?
+  password      String
+  role          Role           @default(NORMAL)
+  enderecoId    Int?
+  endereco      Endereco?      @relation(fields: [enderecoId], references: [id])
+
+  empresa       Empresa?
+  projetos      Projeto[]      @relation("ProdutorProjetos")
+  cursos        Curso[]        @relation("ProdutorCursos")
+
+  voluntarios   Voluntario[] 
+  recomendacoes Recomendacao[]
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Projeto {
+  id                    Int            @id @default(autoincrement())
+  nome                  String
+  imagemUrl             String?
+  descricao             String?
+  valorNecessario       Float?
+  produtorId            Int
+  produtor              User           @relation("ProdutorProjetos", fields: [produtorId], references: [id])
+
+  voluntarios           Voluntario[]   // lista de voluntários com função
+  recomendacoes         Recomendacao[] // lista de recomendações
+
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+}
+
+model Curso {
+  id            Int       @id @default(autoincrement())
+  nome          String
+  imagemUrl     String?
+  descricao     String?
+  qntdHoras     Int?
+  certificado   Boolean    @default(false)
+
+  produtorId    Int
+  produtor      User       @relation("ProdutorCursos", fields: [produtorId], references: [id])
+
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+model Edital {
+  id                    Int       @id @default(autoincrement())
+  nome                  String
+  local                 String
+  condicaoParticipacao  Condicao
+  somenteResidentes     Boolean   @default(false)
+  documentosNecessarios String?
+  linkAcesso            String?
+
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
+
+model Endereco {
+  id        Int     @id @default(autoincrement())
+  rua       String
+  numero    String
+  bairro    String
+  cidade    String
+  estado    String
+
+  user      User?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Voluntario {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  projetoId   Int
+  funcao      String
+
+  user        User     @relation(fields: [userId], references: [id])
+  projeto     Projeto  @relation(fields: [projetoId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, projetoId]) 
+}
+
+model Recomendacao {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  projetoId   Int
+
+  user        User     @relation(fields: [userId], references: [id])
+  projeto     Projeto  @relation(fields: [projetoId], references: [id])
+
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, projetoId]) 
+}
+
+enum Role {
+  NORMAL
+  PRODUTOR
+  FOMENTADOR
+}
+
+enum Condicao {
+  FISICA
+  MEI
+  ME
+}
